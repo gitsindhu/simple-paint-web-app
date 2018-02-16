@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<title> Canvas </title>
+		<!--<script type="text/javascript" src="paint.js"> </script> -->
+		<script type="text/javascript">
+		
+			function points(x,y){
+				this.x=x
+				this.y=y
+			}
+
+			var default_color="black"
+			var error_correction=10
+			var colors=['violet','orange','pink','maroon']
+			var original_color=null
+
+			function triangle(){
+				this.color=default_color
+				this.original_color=this.color
+				this.triangle_area=null
+				this.p1=new points(null,null);
+				this.p2=new points(null,null);
+				this.p3=new points(null,null);
+				this.setpoint1=function(x,y)
+				{
+					this.p1.x=x;
+					this.p1.y=y;
+				}
+				this.setpoint2=function(x,y)
+				{
+					this.p2.x=x;
+					this.p2.y=y;
+				}
+				this.setpoint3=function(x,y)
+				{
+					this.p3.x=x;
+					this.p3.y=y;
+				}
+				this.calculateArea = function() {
+					area=(
+								(this.p1.x * (this.p2.y-this.p3.y))+
+								(this.p2.x * (this.p3.y-this.p1.y))+
+								(this.p3.x * (this.p1.y-this.p2.y))
+							 )  /  2;
+					this.triangle_area=Math.abs(area);
+				}
+			}
+
+			function paint()
+			{
+				var canvas=document.getElementById("a")
+				var context=canvas.getContext("2d")
+				for(var i=0;i < alltriangles.length; i++)
+				{
+					context.beginPath()
+					if(null != alltriangles[i].p1.x && null != alltriangles[i].p1.y)
+						context.moveTo(alltriangles[i].p1.x,alltriangles[i].p1.y)
+					if(null != alltriangles[i].p2.x && null != alltriangles[i].p2.y)	
+						context.lineTo(alltriangles[i].p2.x,alltriangles[i].p2.y)
+					if(null != alltriangles[i].p3.x && null != alltriangles[i].p3.y)
+						context.lineTo(alltriangles[i].p3.x,alltriangles[i].p3.y)
+					if(null != alltriangles[i].p1.x && null != alltriangles[i].p1.y)
+						context.lineTo(alltriangles[i].p1.x,alltriangles[i].p1.y)
+
+					context.strokeStyle=alltriangles[i].color
+					context.stroke()
+					context.fillStyle=alltriangles[i].color
+					context.fill()
+					/*if(null != alltriangles[i].p1.x && null != alltriangles[i].p1.y)
+						debug_border_area(alltriangles[i].p1.x,alltriangles[i].p1.y)
+					if(null != alltriangles[i].p2.x && null != alltriangles[i].p3.y)
+						debug_border_area(alltriangles[i].p2.x,alltriangles[i].p2.y)
+					if(null != alltriangles[i].p2.x && null != alltriangles[i].p3.y)
+						debug_border_area(alltriangles[i].p3.x,alltriangles[i].p3.y)*/
+				}
+			}
+
+			function repaint() {
+				reset()
+				paint()
+			}
+
+			function calcTriangleArea(x1,x2,x3,y1,y2,y3) {
+				area = ( x1 * (y2-y3) +
+						   x2 * (y3 - y1) +
+						   x3 * (y1 - y2) ) / 2
+				return Math.abs(area)
+			}
+
+			/*function debug_border_area(x,y) {
+				var canvas=document.getElementById("a")
+				var ctx=canvas.getContext("2d")
+				ctx.beginPath()
+				ctx.moveTo(x-error_correction,y+error_correction)
+				ctx.lineTo(x+error_correction,y+error_correction)
+				ctx.lineTo(x+error_correction,y-error_correction)
+				ctx.lineTo(x-error_correction,y-error_correction)
+				ctx.lineTo(x-error_correction,y+error_correction)
+				//ctx.strokeStyle="red"
+				//ctx.stroke()
+				ctx.fillStyle="red"
+				ctx.fill()
+			}*/
+			function clear_canvas()
+			{
+				while(alltriangles.length>0)
+				{
+					alltriangles.pop();
+				}
+				reset()
+			}
+
+			var i=0;
+			var selected_index=null;
+			//var colors=['red','orange','pink','grey']
+			var alltriangles=[];
+			var current_triangle=null;
+			var selected_triangle=null;
+			var selected_point=null
+			var over_point=false
+			var over_triangle=false
+			triangleIsSelected = false
+			isDblClick = false
+			creating_triangle=false
+			global_evt=null
+			var add_point=5;
+
+			function mouseMove(evt)
+			{
+				if(creating_triangle){
+					/*var canvas=document.getElementById("a")
+					var context=canvas.getContext("2d")
+					context.lineTo(evt.clientX,evt.clientY)
+					context.strokeStyle="darkgreen"
+					context.stroke()
+					*/
+					return
+				//creating_triangle=false;
+				}
+					
+				if(triangleIsSelected) {
+				   if(over_point && !over_triangle) {
+						selected_point.x = evt.clientX;
+						selected_point.y = evt.clientY;
+						repaint()
+						//alert("dragging triangle");
+						return
+					}
+					else if(!over_point && over_triangle) {
+							diffX=evt.clientX-prev_x;
+							diffY=evt.clientY-prev_y;
+							
+							selected_triangle.p1.x += diffX
+							selected_triangle.p2.x += diffX
+							selected_triangle.p3.x += diffX
+							
+							selected_triangle.p1.y += diffY
+							selected_triangle.p2.y += diffY
+							selected_triangle.p3.y += diffY
+							
+							prev_x=evt.clientX
+							prev_y=evt.clientY
+							
+							repaint()
+							return
+					}
+				}
+				for(var i=0;i<alltriangles.length;i++)
+				{
+					/*for(var pts = 0; pts<3; pts++) {
+						if(evt.clientX==alltriangles[i].p[pts].x && evt.clientY==alltriangles[i].p[pts].y)
+						{
+							alert("points match");
+						}
+					}*/
+					//debug_border_area(alltriangles[i].p1.x,alltriangles[i].p1.y)
+					//debug_border_area(alltriangles[i].p2.x,alltriangles[i].p2.y)
+					//debug_border_area(alltriangles[i].p3.x,alltriangles[i].p3.y)
+					
+					if( (evt.clientX==alltriangles[i].p1.x && evt.clientY==alltriangles[i].p1.y) ||
+						(evt.clientX>=alltriangles[i].p1.x-error_correction && evt.clientX<=alltriangles[i].p1.x+error_correction
+						&& evt.clientY>=alltriangles[i].p1.y-error_correction &&  evt.clientY<=alltriangles[i].p1.y+error_correction ) 
+					  ) {
+						
+							selected_triangle=alltriangles[i]
+							selected_point = alltriangles[i].p1
+							over_point = true
+							selected_index=i
+							//alert("over point");
+							selected_triangle.color = "blue"
+							//selected_triangle.color = "dark"+selected_triangle.original_color
+							repaint()
+							break
+						}
+						
+					else if ( (evt.clientX==alltriangles[i].p2.x && evt.clientY==alltriangles[i].p2.y) ||
+							  (evt.clientX>=alltriangles[i].p2.x-error_correction && evt.clientX<=alltriangles[i].p2.x+error_correction
+								&& evt.clientY>=alltriangles[i].p2.y-error_correction &&  evt.clientY<=alltriangles[i].p2.y+error_correction  ) 
+						) {
+							selected_triangle=alltriangles[i]
+							selected_point = alltriangles[i].p2
+							over_point = true
+							selected_index=i
+							//alert("over point");
+							selected_triangle.color = "blue"
+							//selected_triangle.color = "dark"+selected_triangle.original_color
+							repaint()
+							break
+						}
+						
+					else if ( (evt.clientX==alltriangles[i].p3.x && evt.clientY==alltriangles[i].p3.y) || 
+							  (evt.clientX>=alltriangles[i].p3.x-error_correction && evt.clientX<=alltriangles[i].p3.x+error_correction
+								&& evt.clientY>=alltriangles[i].p3.y-error_correction &&  evt.clientY<=alltriangles[i].p3.y+error_correction )
+							) {
+							//alert("points match");
+							selected_triangle=alltriangles[i]
+							selected_point = alltriangles[i].p3
+							over_point = true
+							selected_index=i
+							//alert("over point");
+							selected_triangle.color = "blue"
+							//selected_triangle.color = "dark"+selected_triangle.original_color
+							repaint()
+						break
+					}
+					
+					
+					else {
+							prevx=evt.clientX;
+							prevy=evt.clientY;
+							
+							area1=calcTriangleArea(prevx,alltriangles[i].p2.x,alltriangles[i].p3.x,
+																prevy,alltriangles[i].p2.y,alltriangles[i].p3.y)
+							                                    
+							/*area1=prev_x * (alltriangles[i].p2.y-alltriangles[i].p3.y)+
+									   alltriangles[i].p2.x * (alltriangles[i].p3.y-prev_y)+
+										alltriangles[i].p3.x * (prev_y-alltriangles[i].p2.y)*/
+
+							area2=calcTriangleArea(prevx,alltriangles[i].p1.x,alltriangles[i].p2.x,
+																prevy,alltriangles[i].p1.y,alltriangles[i].p2.y)
+							/*area2=prev_x * (alltriangles[i].p1.y-alltriangles[i].p3.y)+
+									   alltriangles[i].p1.x * (alltriangles[i].p3.y-prev_y)+
+									   alltriangles[i].p3.x * (prev_y-alltriangles[i].p1.y)*/
+
+							area3=calcTriangleArea(prevx,alltriangles[i].p3.x,alltriangles[i].p1.x, 
+																prevy,alltriangles[i].p3.y,alltriangles[i].p1.y)
+							/*area3=prev_x * (alltriangles[i].p1.y-alltriangles[i].p2.y)+
+									   alltriangles[i].p1.x * (alltriangles[i].p2.y-prev_y)+
+									   alltriangles[i].p2.x * (prev_y-alltriangles[i].p1.y)*/
+
+							alltriangles[i].calculateArea()
+							//alert("Area 1:  " + area1 + "   Area 3:" + area3 + "  Area 2:  " + area2)
+							//alert("tri area :" + alltriangles[i].triangle_area )
+							if(alltriangles[i].triangle_area==(area1+area2+area3))
+							{
+									//alert("point is over triangle");
+									over_triangle = true;
+									selected_triangle = alltriangles[i]
+									selected_index=i
+									//alert("over point");
+									//selected_triangle.color = "brown"
+									selected_triangle.color = "dark"+selected_triangle.original_color
+									repaint()
+									break
+							}
+							
+							over_point = false
+							over_triangle=false
+							if(selected_triangle)  {
+							//selected_triangle.color = default_color
+								selected_triangle.color = selected_triangle.original_color
+								repaint()
+						}
+					}
+					
+				}
+			}
+			function reset()
+			{
+				var canvas=document.getElementById("a")
+				canvas.width=canvas.width
+			}
+			/*function mouseMove(evt){
+				var canvas=document.getElementById("a")
+				var context=canvas.getContext("2d")
+				//alert("mouse move fn called");
+				context.strokeStyle="yellow"
+				context.stroke()
+				//context.moveTo(evt.clientX,evt.clientY)
+				context.lineTo(evt.clientX,evt.clientY)
+				context.moveTo(evt.clientX,evt.clientY)
+			}*/
+			/*function mouseUp(evt) {
+				//alert("mouse Up called")
+				if(triangleIsSelected) {
+					selected_triangle.color = default_color
+					selected_triangle=null
+					selected_point=null
+					triangleIsSelected=false
+					//alert("over point reset to false")
+					over_point=false
+					repaint()
+				}
+			}*/
+			/*function onClick(evt) {
+				mouseDown(evt)
+				mouseUp(evt)
+			}*/
+			function callCorrectClickHandler() {
+				if(isDblClick) {
+					deleteTriangle(global_evt)
+					isDblClick=false
+				}
+				else {
+					singleClick(global_evt)
+				}
+				global_evt=null
+			}
+			function onClick(evt) {
+				//setInterval(callCorrectClickHandler(evt),2000)
+				global_evt = evt
+				setTimeout("callCorrectClickHandler()",200)
+			}
+			function singleClick(evt){
+				//alert("onclick called");
+				var canvas=document.getElementById("a")
+				var context=canvas.getContext("2d")
+				//if(i==0){
+				//context.beginPath()
+				//firstx=evt.clientX
+				//firsty=evt.clientY
+				//context.moveTo(evt.clientX,evt.ClientY)
+				//for(var i=0;i<3;i++)
+					//var triangle[i]=new triangle();
+					if((over_point || over_triangle) && !triangleIsSelected) {
+						prev_x=evt.clientX;
+						prev_y=evt.clientY;
+						triangleIsSelected=true
+						selected_triangle.color = "green"
+						repaint()
+						//alert("triangle selected");
+						return
+					}
+					else if(triangleIsSelected) {
+						//selected_triangle.color = default_color
+						selected_triangle.calculateArea()
+						selected_triangle.color = selected_triangle.original_color
+						selected_triangle=null
+						selected_point=null
+						triangleIsSelected=false
+						//alert("over point reset to false")
+						over_point=false
+						over_triangle=false
+						prev_x=null
+						prev_y=null
+						repaint()
+					}
+					else {
+							//if(i==0)
+							//{
+								current_triangle =new triangle();
+								current_triangle.setpoint1(evt.clientX,evt.clientY-add_point)
+								alltriangles.push(current_triangle)
+								/*context.beginPath()
+								context.moveTo(evt.clientX,evt.clientY)*/
+								creating_triangle=true;
+								
+								//i++;
+							//}
+							//else if(i==1)
+							//{
+								current_triangle.setpoint2(evt.clientX-add_point,evt.clientY+add_point)
+								/*context.lineTo(evt.clientX,evt.clientY)
+								context.moveTo(evt.clientX,evt.clientY)*/
+								//i++;
+							//}
+							//else if(i==2)
+							//{
+								current_triangle.setpoint3(evt.clientX+add_point,evt.clientY+add_point)
+								current_triangle.color=current_triangle.original_color=colors[Math.floor((Math.random()*colors.length)%4)]
+								//current_triangle.color=current_triangle.original_color
+								current_triangle.calculateArea()
+								//alltriangles.push(current_triangle)
+								creating_triangle=false
+								current_triangle=null;
+								//repaint()
+							//}
+						
+						//	i++;
+						//	i=i%3;
+							repaint()
+					}
+				//alert("evt.clientX" + evt.clientX);
+				//alert("evt.clientY" + evt.clientY);
+				//context.moveTo(evt.clientX,evt.ClientY)
+				//context.strokeStyle="yellow"
+				//context.stroke()
+				//context.moveTo(evt.clientX,evt.clientY)
+				/*if(i>0&&i<=2){
+				context.lineTo(evt.clientX,evt.clientY)
+				context.strokeStyle="blue"
+				context.stroke()	
+				} */
+				//context.lineTo(evt.clientX,evt.clientY)
+				//context.strokeStyle="red"
+				//context.stroke()	
+				//i++;
+				//if(i==3)
+				//{
+				//i=0;	
+				//context.moveTo(firstx,firsty)
+				//context.lineTo(firstx,firsty)
+				//context.strokeStyle="red"
+				//context.stroke()	
+				//}
+				//context.moveTo(evt.clientX,evt.clientY)
+				//context.strokeStyle="red"
+				//context.stroke()	
+				//context.fillStyle="red"
+				//context.fill()
+			}
+
+	function dblClickHandler(e) {
+		isDblClick = true
+	}
+	function deleteTriangle(e){
+		//alert("double click called")
+		//over_point=true;
+		if(over_point || over_triangle){
+			selected_triangle.color="red"
+			repaint()
+			alltriangles[selected_index]=null;
+			alltriangles=alltriangles.slice(0,selected_index).concat(alltriangles.slice(selected_index+1))
+			repaint()
+			//alert("deleted called")
+			//over_point=false;
+		}
+		
+	}
+				
+	</script>
+	</head>
+	<body>
+		<!-- <canvas id="a" width=500 height=500 style="	border:solid;background:white" onmouseup="mouseUp(event)" onclick="mouseDown(event)" onmousemove="mouseMove(event)" ondblclick="deleteTriangle(event)" > </canvas> -->
+		<canvas id="a" width=500 height=500 style="	border:solid;background:white" onclick="onClick(event)" onmousemove="mouseMove(event)" ondblclick="dblClickHandler(event)" > </canvas>
+		<label>
+			<input type="button" value="clear" onclick="clear_canvas()"></input>
+		</label>
+	</body>
+</html>
+		
